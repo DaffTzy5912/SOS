@@ -4,6 +4,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Game SOS Online</title>
     <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+    <script defer src="create-room.js"></script>
     <style>
         body { text-align: center; font-family: Arial, sans-serif; }
         .board { display: grid; grid-template-columns: repeat(3, 100px); gap: 5px; justify-content: center; margin-top: 20px; }
@@ -22,44 +23,51 @@
 </head>
 <body>
     <h1>Game SOS Online</h1>
+    <button onclick="createRoom()">Buat Room</button>
+    <p id="roomCodeDisplay"></p>
     <input type="text" id="roomCode" placeholder="Masukkan kode room">
     <button onclick="joinRoom()">Gabung</button>
     <p id="turn">Menunggu pemain...</p>
-    <div class="board" id="board"></div><script>
+    <div class="board" id="board"></div>
+    <script>
     const socket = io("https://sos-sepia.vercel.app");
     let roomCode;
     let symbol = "S";
-    let isMyTurn = false;
+    let isMyTurn = false;function createRoom() {
+    roomCode = Math.random().toString(36).substring(2, 7).toUpperCase();
+    document.getElementById("roomCodeDisplay").textContent = `Kode Room: ${roomCode}`;
+    socket.emit("joinRoom", roomCode);
+}
 
-    function joinRoom() {
-        roomCode = document.getElementById("roomCode").value;
-        if (roomCode) {
-            socket.emit("joinRoom", roomCode);
-        }
+function joinRoom() {
+    roomCode = document.getElementById("roomCode").value;
+    if (roomCode) {
+        socket.emit("joinRoom", roomCode);
     }
+}
 
-    socket.on("updateBoard", (data) => {
-        document.getElementById("board").innerHTML = "";
-        data.board.forEach((cell, index) => {
-            let div = document.createElement("div");
-            div.classList.add("cell");
-            div.textContent = cell;
-            div.onclick = () => makeMove(index);
-            document.getElementById("board").appendChild(div);
-        });
-        
-        if (data.players.length === 2) {
-            document.getElementById("turn").textContent = "Game dimulai! Pilih S atau O.";
-            isMyTurn = data.players[0] === socket.id;
-        }
+socket.on("updateBoard", (data) => {
+    document.getElementById("board").innerHTML = "";
+    data.board.forEach((cell, index) => {
+        let div = document.createElement("div");
+        div.classList.add("cell");
+        div.textContent = cell;
+        div.onclick = () => makeMove(index);
+        document.getElementById("board").appendChild(div);
     });
-
-    function makeMove(index) {
-        if (isMyTurn) {
-            socket.emit("makeMove", { roomCode, index, symbol });
-            isMyTurn = false;
-        }
+    
+    if (data.players.length === 2) {
+        document.getElementById("turn").textContent = "Game dimulai! Pilih S atau O.";
+        isMyTurn = data.players[0] === socket.id;
     }
+});
+
+function makeMove(index) {
+    if (isMyTurn) {
+        socket.emit("makeMove", { roomCode, index, symbol });
+        isMyTurn = false;
+    }
+}
 </script>
 
 </body>
