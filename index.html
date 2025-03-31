@@ -1,0 +1,56 @@
+<!DOCTYPE html><html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game SOS Online</title>
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; }
+        .board { display: grid; grid-template-columns: repeat(3, 100px); gap: 5px; justify-content: center; }
+        .cell {
+            width: 100px;
+            height: 100px;
+            font-size: 2em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid black;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Game SOS Online</h1>
+    <input type="text" id="roomCode" placeholder="Masukkan kode room">
+    <button onclick="joinRoom()">Gabung</button>
+    <p id="turn">Menunggu pemain...</p>
+    <div class="board" id="board"></div><script>
+    const socket = io("http://localhost:3000");
+    let roomCode;
+    let symbol = "S";
+
+    function joinRoom() {
+        roomCode = document.getElementById("roomCode").value;
+        if (roomCode) {
+            socket.emit("joinRoom", roomCode);
+        }
+    }
+
+    socket.on("updateBoard", (data) => {
+        document.getElementById("board").innerHTML = "";
+        data.board.forEach((cell, index) => {
+            let div = document.createElement("div");
+            div.classList.add("cell");
+            div.textContent = cell;
+            div.onclick = () => makeMove(index);
+            document.getElementById("board").appendChild(div);
+        });
+    });
+
+    function makeMove(index) {
+        socket.emit("makeMove", { roomCode, index, symbol });
+    }
+</script>
+
+</body>
+</html>
